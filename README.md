@@ -25,21 +25,11 @@ pnpm i n8n-nodes-searxng
 The node supports performing web searches with the following features:
 
 - **Query**: Enter your search terms
-- **Categories**: Choose from multiple search categories:
-  - General
-  - Images
-  - News
-  - Videos
-  - Files
-  - IT
-  - Maps
-  - Music
-  - Science
-  - Social Media
+- **Categories**: Choose from preset search categories (General, Images, News, Videos, Files, IT, Maps, Music, Science, Social Media) and optionally add **Custom Categories** as comma-separated values for instance-specific categories.
 
 ### Additional Options
 
-- **Language**: Filter results by language (English, German, French, Spanish, Italian, or All Languages)
+- **Language**: Filter results by any API-valid language value (for example `en`, `en-US`, `pt-BR`, `all`, or instance-specific locale codes)
 - **Time Range**: Filter results by time (Day, Week, Month, Year, or Any Time)
 - **Safe Search**: Set safety level (Off, Moderate, or Strict)
 - **Page Number**: Specify which page of results to retrieve
@@ -50,6 +40,7 @@ The node supports performing web searches with the following features:
 - **Theme**: Theme name to use for rendering (for example: `simple`)
 - **Image Proxy**: Proxy image URLs through the SearXNG instance
 - **Autocomplete**: Autocomplete backend to use (for example: `duckduckgo`)
+- **Input normalization**: Comma-separated fields are trimmed and re-joined with commas before being sent to SearXNG, and empty values are ignored.
 
 ## Credentials
 
@@ -67,8 +58,9 @@ To use this node, you need to configure credentials for your SearXNG instance:
    {
      "query": "your search terms",
      "categories": ["general"],
+     "customCategories": "my-custom-category",
      "additionalFields": {
-       "language": "en",
+       "language": "en-US",
        "time_range": "month",
        "safesearch": "1",
        "engines": "google,duckduckgo",
