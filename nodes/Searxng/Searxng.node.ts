@@ -88,7 +88,16 @@ export class Searxng implements INodeType {
           { name: "Social Media", value: "social media" },
         ],
         default: ["general"],
-        description: "Categories to search in",
+        description: "Preset categories to search in",
+      },
+      {
+        displayName: "Custom Categories",
+        name: "customCategories",
+        type: "string",
+        default: "",
+        placeholder: "general,images,custom-category",
+        description:
+          "Additional category names. Use comma-separated values to include categories not listed in presets",
       },
       {
         displayName: "Return Single Response",
@@ -107,17 +116,11 @@ export class Searxng implements INodeType {
           {
             displayName: "Language",
             name: "language",
-            type: "options",
-            options: [
-              { name: "English", value: "en" },
-              { name: "German", value: "de" },
-              { name: "French", value: "fr" },
-              { name: "Spanish", value: "es" },
-              { name: "Italian", value: "it" },
-              { name: "All Languages", value: "all" },
-            ],
+            type: "string",
             default: "en",
-            description: "Language of the search results",
+            placeholder: "en, en-US, pt-BR, all",
+            description:
+              "Language of the search results. Accepts any locale or instance-specific value",
           },
           {
             displayName: "Time Range",
@@ -253,6 +256,7 @@ export class Searxng implements INodeType {
         }
 
         const categories = this.getNodeParameter("categories", i) as string[];
+        const customCategories = this.getNodeParameter("customCategories", i) as string;
         const singleResponse = this.getNodeParameter("singleResponse", i) as boolean;
         const additionalFields = this.getNodeParameter(
           "additionalFields",
@@ -271,32 +275,50 @@ export class Searxng implements INodeType {
           autocomplete?: string;
         };
 
-        const serializeListParam = (value?: string | string[]): string | undefined => {
+        const normalizeCommaSeparatedValues = (value?: string | string[]): string | undefined => {
           if (!value) {
             return undefined;
           }
 
-          if (Array.isArray(value)) {
-            return value.join(",");
+          const values = Array.isArray(value) ? value : value.split(",");
+          const normalized = values
+            .map((entry) => `${entry}`.trim())
+            .filter((entry) => entry.length > 0);
+
+          if (normalized.length === 0) {
+            return undefined;
           }
 
-          return value
-            .split(",")
-            .map((entry) => entry.trim())
-            .filter((entry) => entry.length > 0)
-            .join(",");
+          return normalized.join(",");
+        };
+
+        const normalizeSingleValue = (value?: string): string | undefined => {
+          if (!value) {
+            return undefined;
+          }
+
+          const normalized = value.trim();
+          return normalized.length > 0 ? normalized : undefined;
         };
 
         const format = additionalFields.format || "json";
+        const normalizedCategories = normalizeCommaSeparatedValues([
+          ...categories,
+          ...(customCategories ? customCategories.split(",") : []),
+        ]);
 
         const queryParameters: Record<string, string | number | boolean> = {
           q: query,
-          categories: categories.join(","),
           format,
         };
 
-        if (additionalFields.language) {
-          queryParameters.language = additionalFields.language;
+        if (normalizedCategories) {
+          queryParameters.categories = normalizedCategories;
+        }
+
+        const normalizedLanguage = normalizeSingleValue(additionalFields.language);
+        if (normalizedLanguage) {
+          queryParameters.language = normalizedLanguage;
         }
         if (additionalFields.time_range) {
           queryParameters.time_range = additionalFields.time_range;
@@ -307,24 +329,26 @@ export class Searxng implements INodeType {
         if (additionalFields.pageno) {
           queryParameters.pageno = additionalFields.pageno;
         }
-        if (additionalFields.theme) {
-          queryParameters.theme = additionalFields.theme;
+        const normalizedTheme = normalizeSingleValue(additionalFields.theme);
+        if (normalizedTheme) {
+          queryParameters.theme = normalizedTheme;
         }
-        if (additionalFields.autocomplete) {
-          queryParameters.autocomplete = additionalFields.autocomplete;
+        const normalizedAutocomplete = normalizeSingleValue(additionalFields.autocomplete);
+        if (normalizedAutocomplete) {
+          queryParameters.autocomplete = normalizedAutocomplete;
         }
 
-        const engines = serializeListParam(additionalFields.engines);
+        const engines = normalizeCommaSeparatedValues(additionalFields.engines);
         if (engines) {
           queryParameters.engines = engines;
         }
 
-        const enabledPlugins = serializeListParam(additionalFields.enabled_plugins);
+        const enabledPlugins = normalizeCommaSeparatedValues(additionalFields.enabled_plugins);
         if (enabledPlugins) {
           queryParameters.enabled_plugins = enabledPlugins;
         }
 
-        const disabledPlugins = serializeListParam(additionalFields.disabled_plugins);
+        const disabledPlugins = normalizeCommaSeparatedValues(additionalFields.disabled_plugins);
         if (disabledPlugins) {
           queryParameters.disabled_plugins = disabledPlugins;
         }
