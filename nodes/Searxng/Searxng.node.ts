@@ -1,24 +1,29 @@
 import {
   IExecuteFunctions,
+  ILoadOptionsFunctions,
   INodeExecutionData,
+  INodePropertyOptions,
   INodeType,
   INodeTypeDescription,
-  NodeOperationError,
   NodeConnectionType,
   IDataObject,
-} from "n8n-workflow";
+} from 'n8n-workflow';
+import { CREDENTIAL_NAME } from './constants';
+import { searchOperations, searchFields } from './description/search.operation';
+import { normalizeCommaSeparatedValues, normalizeSingleValue } from './lib/helpers';
+import { searxngRequest, searxngConfigRequest } from './lib/transport';
 
 export class Searxng implements INodeType {
   description: INodeTypeDescription = {
-    displayName: "Searxng",
-    name: "searxng",
-    icon: "file:searxng.svg",
-    group: ["transform"],
+    displayName: 'Searxng',
+    name: 'searxng',
+    icon: 'file:searxng.svg',
+    group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["operation"]}}',
-    description: "Perform web searches using Searxng",
+    description: 'Perform web searches using Searxng',
     defaults: {
-      name: "Searxng",
+      name: 'Searxng',
     },
     inputs: [
       {
@@ -33,194 +38,59 @@ export class Searxng implements INodeType {
     usableAsTool: true,
     credentials: [
       {
-        name: "searxngApi",
+        name: CREDENTIAL_NAME,
         required: true,
       },
     ],
-    // Add AI tool metadata
     codex: {
-      categories: ["Search", "Web"],
-      alias: ["web-search", "searxng", "search-engine"],
+      categories: ['Search', 'Web'],
+      alias: ['web-search', 'searxng', 'search-engine'],
       subcategories: {
-        search: ["Web Search", "Metasearch"],
+        search: ['Web Search', 'Metasearch'],
       },
     },
-    properties: [
-      {
-        displayName: "Operation",
-        name: "operation",
-        type: "options",
-        noDataExpression: true,
-        options: [
-          {
-            name: "Search",
-            value: "search",
-            description: "Perform a search query",
-            action: "Perform a search query",
-          },
-        ],
-        default: "search",
+    properties: [...searchOperations, ...searchFields],
+  };
+
+  methods = {
+    loadOptions: {
+      async getCategories(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const config = await searxngConfigRequest(this);
+        const categories: string[] = config.categories ?? [];
+        return categories
+          .map((c) => ({ name: c.charAt(0).toUpperCase() + c.slice(1), value: c }))
+          .sort((a, b) => a.name.localeCompare(b.name));
       },
-      {
-        displayName: "Query",
-        name: "query",
-        type: "string",
-        default: "",
-        required: true,
-        placeholder: "Enter search query",
-        description: "The search query to perform",
-        hint: "Can be provided directly or via AI agent input",
+
+      async getLanguages(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const config = await searxngConfigRequest(this);
+        const locales: Record<string, string> = config.locales ?? {};
+        const options: INodePropertyOptions[] = Object.entries(locales)
+          .map(([value, name]) => ({ name: name as string, value }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        return [{ name: 'All Languages', value: 'all' }, ...options];
       },
-      {
-        displayName: "Categories",
-        name: "categories",
-        type: "multiOptions",
-        options: [
-          { name: "General", value: "general" },
-          { name: "Images", value: "images" },
-          { name: "News", value: "news" },
-          { name: "Videos", value: "videos" },
-          { name: "Files", value: "files" },
-          { name: "IT", value: "it" },
-          { name: "Maps", value: "map" },
-          { name: "Music", value: "music" },
-          { name: "Science", value: "science" },
-          { name: "Social Media", value: "social media" },
-        ],
-        default: ["general"],
-        description: "Preset categories to search in",
+
+      async getEngines(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const config = await searxngConfigRequest(this);
+        const engines: Array<{ name: string; categories: string[] }> = config.engines ?? [];
+        return engines
+          .map((e) => ({
+            name: e.name,
+            value: e.name,
+            description: (e.categories ?? []).join(', '),
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
       },
-      {
-        displayName: "Custom Categories",
-        name: "customCategories",
-        type: "string",
-        default: "",
-        placeholder: "general,images,custom-category",
-        description:
-          "Additional category names. Use comma-separated values to include categories not listed in presets",
+
+      async getPlugins(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const config = await searxngConfigRequest(this);
+        const plugins: Array<{ name: string }> = config.plugins ?? [];
+        return plugins
+          .map((p) => ({ name: p.name, value: p.name }))
+          .sort((a, b) => a.name.localeCompare(b.name));
       },
-      {
-        displayName: "Return Single Response",
-        name: "singleResponse",
-        type: "boolean",
-        default: false,
-        description: "Whether to return only the content from the first search result as a string",
-      },
-      {
-        displayName: "Additional Fields",
-        name: "additionalFields",
-        type: "collection",
-        placeholder: "Add Field",
-        default: {},
-        options: [
-          {
-            displayName: "Language",
-            name: "language",
-            type: "string",
-            default: "en",
-            placeholder: "en, en-US, pt-BR, all",
-            description:
-              "Language of the search results. Accepts any locale or instance-specific value",
-          },
-          {
-            displayName: "Time Range",
-            name: "time_range",
-            type: "options",
-            options: [
-              { name: "Any Time", value: "all" },
-              { name: "Day", value: "day" },
-              { name: "Week", value: "week" },
-              { name: "Month", value: "month" },
-              { name: "Year", value: "year" },
-            ],
-            default: "all",
-            description: "Time range for the search results",
-          },
-          {
-            displayName: "Safe Search",
-            name: "safesearch",
-            type: "options",
-            options: [
-              { name: "Off", value: "0" },
-              { name: "Moderate", value: "1" },
-              { name: "Strict", value: "2" },
-            ],
-            default: "1",
-            description: "Safe search level",
-          },
-          {
-            displayName: "Page Number",
-            name: "pageno",
-            type: "number",
-            typeOptions: {
-              minValue: 1,
-            },
-            default: 1,
-            description: "Page number of results",
-          },
-          {
-            displayName: "Format",
-            name: "format",
-            type: "options",
-            options: [
-              { name: "CSV", value: "csv" },
-              { name: "HTML", value: "html" },
-              { name: "JSON", value: "json" },
-              { name: "RSS", value: "rss" },
-            ],
-            default: "json",
-            description: "Output format of the search results",
-          },
-          {
-            displayName: "Engines",
-            name: "engines",
-            type: "string",
-            default: "",
-            placeholder: "google,duckduckgo,bing",
-            description: "Comma-separated list of engines to use",
-          },
-          {
-            displayName: "Enabled Plugins",
-            name: "enabled_plugins",
-            type: "string",
-            default: "",
-            placeholder: "Hash_plugin,Self_Information",
-            description: "Comma-separated list of plugins to enable",
-          },
-          {
-            displayName: "Disabled Plugins",
-            name: "disabled_plugins",
-            type: "string",
-            default: "",
-            placeholder: "Tracker_URL_remover",
-            description: "Comma-separated list of plugins to disable",
-          },
-          {
-            displayName: "Theme",
-            name: "theme",
-            type: "string",
-            default: "",
-            placeholder: "simple",
-            description: "Theme used for the response rendering",
-          },
-          {
-            displayName: "Image Proxy",
-            name: "image_proxy",
-            type: "boolean",
-            default: false,
-            description: "Whether to proxy image URLs through SearXNG",
-          },
-          {
-            displayName: "Autocomplete",
-            name: "autocomplete",
-            type: "string",
-            default: "",
-            placeholder: "duckduckgo",
-            description: "Autocomplete backend to use",
-          },
-        ],
-      },
-    ],
+    },
   };
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -228,83 +98,44 @@ export class Searxng implements INodeType {
     const returnData: INodeExecutionData[] = [];
 
     try {
-      const credentials = await this.getCredentials("searxngApi");
-      if (!credentials) {
-        throw new NodeOperationError(
-          this.getNode(),
-          "No credentials got returned!",
-        );
-      }
-
       for (let i = 0; i < items.length; i++) {
-        // Enhanced input handling for AI compatibility
-        let query: string
-        const item = items[i].json as IDataObject
+        let query: string;
+        const item = items[i].json as IDataObject;
 
         if (item) {
           if (typeof item.query === 'string') {
-            query = item.query
+            query = item.query;
           } else if (typeof item.input === 'string') {
-            query = item.input
+            query = item.input;
           } else if (typeof item.prompt === 'string') {
-            query = item.prompt
+            query = item.prompt;
           } else {
-            query = this.getNodeParameter("query", i) as string
+            query = this.getNodeParameter('query', i) as string;
           }
         } else {
-          query = this.getNodeParameter("query", i) as string;
+          query = this.getNodeParameter('query', i) as string;
         }
 
-        const categories = this.getNodeParameter("categories", i) as string[];
-        const customCategories = this.getNodeParameter("customCategories", i) as string;
-        const singleResponse = this.getNodeParameter("singleResponse", i) as boolean;
-        const additionalFields = this.getNodeParameter(
-          "additionalFields",
-          i,
-        ) as {
+        const categories = this.getNodeParameter('categories', i) as string[];
+        const customCategories = this.getNodeParameter('customCategories', i) as string;
+        const singleResponse = this.getNodeParameter('singleResponse', i) as boolean;
+        const additionalFields = this.getNodeParameter('additionalFields', i) as {
           language?: string;
           time_range?: string;
           safesearch?: string;
           pageno?: number;
           format?: string;
-          engines?: string | string[];
-          enabled_plugins?: string | string[];
-          disabled_plugins?: string | string[];
-          theme?: string;
+          engines?: string[];
+          enabled_plugins?: string[];
+          disabled_plugins?: string[];
           image_proxy?: boolean;
           autocomplete?: string;
         };
 
-        const normalizeCommaSeparatedValues = (value?: string | string[]): string | undefined => {
-          if (!value) {
-            return undefined;
-          }
-
-          const values = Array.isArray(value) ? value : value.split(",");
-          const normalized = values
-            .map((entry) => `${entry}`.trim())
-            .filter((entry) => entry.length > 0);
-
-          if (normalized.length === 0) {
-            return undefined;
-          }
-
-          return normalized.join(",");
-        };
-
-        const normalizeSingleValue = (value?: string): string | undefined => {
-          if (!value) {
-            return undefined;
-          }
-
-          const normalized = value.trim();
-          return normalized.length > 0 ? normalized : undefined;
-        };
-
-        const format = additionalFields.format || "json";
+        const format = additionalFields.format || 'json';
         const normalizedCategories = normalizeCommaSeparatedValues([
           ...categories,
-          ...(customCategories ? customCategories.split(",") : []),
+          ...(customCategories ? customCategories.split(',') : []),
         ]);
 
         const queryParameters: Record<string, string | number | boolean> = {
@@ -317,10 +148,10 @@ export class Searxng implements INodeType {
         }
 
         const normalizedLanguage = normalizeSingleValue(additionalFields.language);
-        if (normalizedLanguage) {
+        if (normalizedLanguage && normalizedLanguage !== 'all') {
           queryParameters.language = normalizedLanguage;
         }
-        if (additionalFields.time_range) {
+        if (additionalFields.time_range && additionalFields.time_range !== 'all') {
           queryParameters.time_range = additionalFields.time_range;
         }
         if (additionalFields.safesearch) {
@@ -328,10 +159,6 @@ export class Searxng implements INodeType {
         }
         if (additionalFields.pageno) {
           queryParameters.pageno = additionalFields.pageno;
-        }
-        const normalizedTheme = normalizeSingleValue(additionalFields.theme);
-        if (normalizedTheme) {
-          queryParameters.theme = normalizedTheme;
         }
         const normalizedAutocomplete = normalizeSingleValue(additionalFields.autocomplete);
         if (normalizedAutocomplete) {
@@ -353,43 +180,24 @@ export class Searxng implements INodeType {
           queryParameters.disabled_plugins = disabledPlugins;
         }
 
-        if (Object.prototype.hasOwnProperty.call(additionalFields, "image_proxy")) {
+        if (Object.prototype.hasOwnProperty.call(additionalFields, 'image_proxy')) {
           queryParameters.image_proxy = additionalFields.image_proxy as boolean;
         }
 
         try {
-          const acceptHeaderByFormat: Record<string, string> = {
-            json: "application/json",
-            csv: "text/csv",
-            rss: "application/rss+xml, application/xml",
-            html: "text/html",
-          };
+          const response = await searxngRequest(this, queryParameters, format);
 
-          const response = await this.helpers.httpRequest({
-            method: "GET" as const,
-            url: `${credentials.apiUrl}/search`,
-            qs: queryParameters,
-            headers: {
-              ...(acceptHeaderByFormat[format]
-                ? { Accept: acceptHeaderByFormat[format] }
-                : {}),
-              Authorization: `Bearer ${credentials.apiKey}`,
-            },
-          });
-
-          if (format === "json") {
-            // Format output for AI compatibility
+          if (format === 'json') {
             const formattedResults = Array.isArray(response.results)
               ? response.results.map((result: any) => ({
-                title: result.title,
-                url: result.url,
-                content: result.content,
-                snippet: result.snippet || result.content,
-              }))
+                  title: result.title,
+                  url: result.url,
+                  content: result.content,
+                  snippet: result.snippet || result.content,
+                }))
               : [];
 
             if (singleResponse && formattedResults.length > 0) {
-              // Return only the content from the first result when singleResponse is enabled
               returnData.push({
                 json: {
                   success: true,
@@ -409,7 +217,7 @@ export class Searxng implements INodeType {
                     time: response.search_time,
                     engine: response.engine,
                   },
-                  raw: response, // Include raw response for compatibility
+                  raw: response,
                 },
               });
             }

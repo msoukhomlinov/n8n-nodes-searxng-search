@@ -1,4 +1,4 @@
-# n8n-nodes-searxng
+# n8n-nodes-searxng-search
 
 This is an n8n community node for integrating with SearXNG. It allows you to perform web searches using SearXNG instances in your n8n workflows.
 
@@ -15,7 +15,7 @@ This is an n8n community node for integrating with SearXNG. It allows you to per
 Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
 ```bash
-pnpm i n8n-nodes-searxng
+pnpm i n8n-nodes-searxng-search
 ```
 
 ## Operations
@@ -112,12 +112,12 @@ Please make sure to update tests as appropriate.
 
 ## Support
 
-- Create an [issue](https://github.com/sammcj/n8n-nodes-searxng/issues)
+- Create an [issue](https://github.com/msoukhomlinov/n8n-nodes-searxng-search/issues)
 - Review the [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
 
 ## Author
 
-Sam McLeod
+msoukhomlinov
 
 ## Resources
 

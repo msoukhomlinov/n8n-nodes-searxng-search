@@ -1,11 +1,11 @@
 {
-  "name": "n8n-nodes-searxng",
-  "version": "0.2.6",
+  "name": "n8n-nodes-searxng-search",
+  "version": "0.3.0",
   "description": "n8n community node for SearXNG search engine with AI agent support",
   "keywords": [
     "n8n-community-node-package",
     "searxng",
-    "sammcj",
+    "msoukhomlinov",
     "search",
     "search-engine",
     "n8n",
@@ -15,11 +15,11 @@
   "license": "MIT",
   "homepage": "",
   "author": {
-    "name": "Sam McLeod"
+    "name": "Max Soukohomlinov"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sammcj/n8n-nodes-searxng.git"
+    "url": "https://github.com/msoukhomlinov/n8n-nodes-searxng-search.git"
   },
   "engines": {
     "node": ">=18.10",
@@ -46,10 +46,13 @@
       "dist/credentials/SearxngApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/Searxng/Searxng.node.js"
+      "dist/nodes/Searxng/Searxng.node.js",
+      "dist/nodes/Searxng/SearxngAiTools.node.js"
     ]
   },
   "devDependencies": {
+    "@langchain/core": "*",
+    "zod": "*",
     "@eslint/js": "9.15.0",
     "@types/eslint": "9.6.1",
     "@typescript-eslint/parser": "^8.15.0",
