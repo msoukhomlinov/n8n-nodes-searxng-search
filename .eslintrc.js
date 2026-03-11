@@ -34,6 +34,7 @@ module.exports = {
     {
       files: ['./credentials/**/*.ts'],
       plugins: ['eslint-plugin-n8n-nodes-base'],
+      extends: ['prettier'],
       rules: {
         'n8n-nodes-base/cred-class-field-documentation-url-missing': 'off',
         'n8n-nodes-base/cred-class-field-documentation-url-miscased': 'off',
@@ -43,7 +44,7 @@ module.exports = {
     {
       files: ['./nodes/**/*.ts'],
       plugins: ['eslint-plugin-n8n-nodes-base'],
-      extends: ['plugin:n8n-nodes-base/nodes'],
+      extends: ['plugin:n8n-nodes-base/nodes', 'prettier'],
       rules: {
         'n8n-nodes-base/node-class-description-inputs-wrong-regular-node': 'off',
         'n8n-nodes-base/node-class-description-outputs-wrong': 'off',

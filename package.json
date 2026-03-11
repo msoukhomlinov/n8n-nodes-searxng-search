@@ -34,13 +34,18 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "build": "tsc && gulp build:icons",
-    "dev": "tsc --watch",
-    "format": "prettier credentials nodes --write",
-    "lint": "eslint nodes/**/*.ts credentials/**/*.ts package.json",
-    "lintfix": "eslint nodes/**/*.ts credentials/**/*.ts package.json --fix",
+    "clean": "rimraf dist",
+    "build": "pnpm clean && tsc -p tsconfig.build.json && gulp build:icons",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "bump": "npx standard-version",
-    "prepublishOnly": "pnpm build && eslint nodes/**/*.ts credentials/**/*.ts package.json -c .eslintrc.prepublish.js"
+    "prepublishOnly": "pnpm lint && pnpm typecheck && pnpm build"
   },
   "files": [
     "dist/**",
@@ -62,6 +67,7 @@
     "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-n8n-nodes-base": "^1.16.3",
     "gulp": "^5.0.0",
     "n8n-workflow": "1.68.0",
