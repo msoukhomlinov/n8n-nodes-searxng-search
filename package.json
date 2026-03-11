@@ -32,10 +32,10 @@
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier credentials nodes --write",
-    "lint": "eslint **/*.ts package.json --no-warn-ignored",
-    "lintfix": "eslint **/*.ts package.json --fix --no-warn-ignored",
+    "lint": "eslint nodes/**/*.ts credentials/**/*.ts package.json",
+    "lintfix": "eslint nodes/**/*.ts credentials/**/*.ts package.json --fix",
     "bump": "npx standard-version",
-    "prepublishOnly": "pnpm build && eslint nodes/**/*.ts credentials/**/*.ts package.json --no-warn-ignored -c .eslintrc.prepublish.js"
+    "prepublishOnly": "pnpm build && eslint nodes/**/*.ts credentials/**/*.ts package.json -c .eslintrc.prepublish.js"
   },
   "files": [
     "dist"
@@ -55,6 +55,7 @@
     "zod": "*",
     "@eslint/js": "9.15.0",
     "@types/eslint": "9.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^8.57.1",
     "eslint-plugin-n8n-nodes-base": "^1.16.3",

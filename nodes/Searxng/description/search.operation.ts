@@ -31,7 +31,7 @@ export const searchFields: INodeProperties[] = [
     hint: 'Can be provided directly or via AI agent input',
   },
   {
-    displayName: 'Categories',
+    displayName: 'Category Names or IDs',
     name: 'categories',
     type: 'multiOptions',
     typeOptions: {
@@ -39,7 +39,7 @@ export const searchFields: INodeProperties[] = [
     },
     options: [],
     default: [],
-    description: 'Categories to search in. Loaded from your SearXNG instance',
+    description: 'Categories to search in. Loaded from your SearXNG instance. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
   },
   {
     displayName: 'Custom Categories',
@@ -47,8 +47,7 @@ export const searchFields: INodeProperties[] = [
     type: 'string',
     default: '',
     placeholder: 'general,images,custom-category',
-    description:
-      'Additional category names. Use comma-separated values to include categories not listed in presets',
+    description: 'Additional category names. Use comma-separated values to include categories not listed in presets.',
   },
   {
     displayName: 'Return Single Response',
@@ -65,22 +64,22 @@ export const searchFields: INodeProperties[] = [
     default: {},
     options: [
       {
-        displayName: 'Language',
+        displayName: 'Language Name or ID',
         name: 'language',
         type: 'options',
         typeOptions: {
           loadOptionsMethod: 'getLanguages',
         },
         options: [],
-        default: 'all',
-        description: 'Language of the search results. Loaded from your SearXNG instance',
+        default: '',
+        description: 'Language of the search results. Loaded from your SearXNG instance. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Time Range',
         name: 'time_range',
         type: 'options',
         options: [...TIME_RANGES],
-        default: 'all',
+        default: '',
         description: 'Time range for the search results',
       },
       {
@@ -88,7 +87,7 @@ export const searchFields: INodeProperties[] = [
         name: 'safesearch',
         type: 'options',
         options: [...SAFE_SEARCH_LEVELS],
-        default: '1',
+        default: '',
         description: 'Safe search level',
       },
       {
@@ -106,11 +105,11 @@ export const searchFields: INodeProperties[] = [
         name: 'format',
         type: 'options',
         options: [...FORMATS],
-        default: 'json',
+        default: '',
         description: 'Output format of the search results',
       },
       {
-        displayName: 'Engines',
+        displayName: 'Engine Names or IDs',
         name: 'engines',
         type: 'multiOptions',
         typeOptions: {
@@ -118,10 +117,10 @@ export const searchFields: INodeProperties[] = [
         },
         options: [],
         default: [],
-        description: 'Engines to use for the search. Loaded from your SearXNG instance',
+        description: 'Engines to use for the search. Loaded from your SearXNG instance. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
-        displayName: 'Enabled Plugins',
+        displayName: 'Enabled Plugin Names or IDs',
         name: 'enabled_plugins',
         type: 'multiOptions',
         typeOptions: {
@@ -129,10 +128,10 @@ export const searchFields: INodeProperties[] = [
         },
         options: [],
         default: [],
-        description: 'Plugins to enable for this search. Loaded from your SearXNG instance',
+        description: 'Plugins to enable for this search. Loaded from your SearXNG instance. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
-        displayName: 'Disabled Plugins',
+        displayName: 'Disabled Plugin Names or IDs',
         name: 'disabled_plugins',
         type: 'multiOptions',
         typeOptions: {
@@ -140,7 +139,7 @@ export const searchFields: INodeProperties[] = [
         },
         options: [],
         default: [],
-        description: 'Plugins to disable for this search. Loaded from your SearXNG instance',
+        description: 'Plugins to disable for this search. Loaded from your SearXNG instance. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Image Proxy',
