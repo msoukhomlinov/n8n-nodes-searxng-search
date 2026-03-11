@@ -71,6 +71,7 @@ export class SearxngAiTools implements INodeType {
     defaults: { name: 'SearXNG Search Tool' },
     inputs: [],
     outputs: [{ type: 'ai_tool' as NodeConnectionType, displayName: 'Tool' }],
+    usableAsTool: true,
     credentials: [
       {
         name: CREDENTIAL_NAME,

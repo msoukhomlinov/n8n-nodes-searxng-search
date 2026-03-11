@@ -2,7 +2,7 @@ import { IAuthenticateGeneric, ICredentialType, INodeProperties } from 'n8n-work
 
 export class SearxngApi implements ICredentialType {
   name = 'searxngApi';
-  displayName = 'Searxng API';
+  displayName = 'SearXNG API';
   properties: INodeProperties[] = [
     {
       displayName: 'API URL',

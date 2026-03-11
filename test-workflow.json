@@ -23,7 +23,7 @@
         "categories": ["general"],
         "additionalFields": {}
       },
-      "name": "Searxng",
+      "name": "SearXNG Search",
       "type": "searxng.searxng",
       "typeVersion": 1,
       "position": [650, 300]
@@ -45,7 +45,7 @@
       "main": [
         [
           {
-            "node": "Searxng",
+            "node": "SearXNG Search",
             "type": "main",
             "index": 0
           }

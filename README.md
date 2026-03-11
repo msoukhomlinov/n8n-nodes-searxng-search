@@ -1,6 +1,6 @@
 # n8n-nodes-searxng-search
 
-This is an n8n community node for integrating with SearXNG. It allows you to perform web searches using SearXNG instances in your n8n workflows.
+This is an n8n community node for SearXNG Search. It allows you to perform web searches using SearXNG instances in your n8n workflows.
 
 [SearXNG](https://github.com/searxng/searxng) is a privacy-respecting, self-hosted metasearch engine that aggregates results from various search services and databases. Users are neither tracked nor profiled.
 
@@ -51,8 +51,8 @@ To use this node, you need to configure credentials for your SearXNG instance:
 
 ## Example Usage
 
-1. Add the SearXNG node to your workflow
-2. Configure your SearXNG credentials
+1. Add the SearXNG Search node to your workflow
+2. Configure your SearXNG API credentials
 3. Set up your search parameters:
    ```json
    {

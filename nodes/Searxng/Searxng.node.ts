@@ -20,15 +20,15 @@ import {
 
 export class Searxng implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'Searxng',
+    displayName: 'SearXNG Search',
     name: 'searxng',
     icon: 'file:searxng.svg',
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["operation"]}}',
-    description: 'Perform web searches using Searxng',
+    description: 'Search the web with SearXNG',
     defaults: {
-      name: 'Searxng',
+      name: 'SearXNG Search',
     },
     inputs: [
       {
