@@ -1,24 +1,20 @@
-import {
-  IAuthenticateGeneric,
-  ICredentialType,
-  INodeProperties,
-} from "n8n-workflow";
+import { IAuthenticateGeneric, ICredentialType, INodeProperties } from 'n8n-workflow';
 
 export class SearxngApi implements ICredentialType {
-  name = "searxngApi";
-  displayName = "Searxng API";
+  name = 'searxngApi';
+  displayName = 'Searxng API';
   properties: INodeProperties[] = [
     {
-      displayName: "API URL",
-      name: "apiUrl",
-      type: "string",
-      default: "http://searxng:8080",
+      displayName: 'API URL',
+      name: 'apiUrl',
+      type: 'string',
+      default: 'http://searxng:8080',
     },
     {
-      displayName: "API Key",
-      name: "apiKey",
-      type: "string",
-      default: "",
+      displayName: 'API Key',
+      name: 'apiKey',
+      type: 'string',
+      default: '',
       typeOptions: {
         password: true,
       },
@@ -26,7 +22,7 @@ export class SearxngApi implements ICredentialType {
   ];
 
   authenticate: IAuthenticateGeneric = {
-    type: "generic",
+    type: 'generic',
     properties: {
       headers: {
         Authorization: '={{"Bearer " + $credentials.apiKey}}',

@@ -8,8 +8,13 @@ import { formatToolError } from './error-formatter';
  * They must be stripped before forwarding params to the API.
  */
 const N8N_METADATA_FIELDS = new Set([
-  'sessionId', 'action', 'chatInput',
-  'root', 'tool', 'toolName', 'toolCallId',
+  'sessionId',
+  'action',
+  'chatInput',
+  'root',
+  'tool',
+  'toolName',
+  'toolCallId',
 ]);
 
 export async function executeSearchTool(
@@ -35,7 +40,9 @@ export async function executeSearchTool(
       format: 'json',
     };
 
-    const normalizedCategories = normalizeCommaSeparatedValues(input.categories as string | undefined);
+    const normalizedCategories = normalizeCommaSeparatedValues(
+      input.categories as string | undefined,
+    );
     if (normalizedCategories) {
       queryParameters.categories = normalizedCategories;
     }
@@ -64,9 +71,15 @@ export async function executeSearchTool(
 
     // Safe cast: searxngRequest only uses getCredentials + helpers.httpRequest,
     // both present on ISupplyDataFunctions.
-    const response = await searxngRequest(context as unknown as IExecuteFunctions, queryParameters, 'json');
+    const response = await searxngRequest(
+      context as unknown as IExecuteFunctions,
+      queryParameters,
+      'json',
+    );
 
-    const allResults: Array<{ title: string; url: string; content: string }> = Array.isArray(response.results)
+    const allResults: Array<{ title: string; url: string; content: string }> = Array.isArray(
+      response.results,
+    )
       ? response.results.map((r: Record<string, unknown>) => ({
           title: String(r.title ?? ''),
           url: String(r.url ?? ''),

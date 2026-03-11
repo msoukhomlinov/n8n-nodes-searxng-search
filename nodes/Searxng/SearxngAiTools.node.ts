@@ -29,7 +29,10 @@ import { executeSearchTool } from './ai-tools/tool-executor';
 // Probe n8n-core first; fall back to classic if StructuredToolkit is absent.
 // ---------------------------------------------------------------------------
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let LangChainToolkitBase: new (...args: any[]) => { tools?: DynamicStructuredTool[]; getTools?(): DynamicStructuredTool[] };
+let LangChainToolkitBase: new (...args: any[]) => {
+  tools?: DynamicStructuredTool[];
+  getTools?(): DynamicStructuredTool[];
+};
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   const nCore = require('n8n-core') as Record<string, unknown>;
@@ -138,20 +141,28 @@ export class SearxngAiTools implements INodeType {
 
     // No tool field → "Test step" click, not a real AI Agent tool call
     if (!firstItemTool) {
-      return [[{
-        json: {
-          message: 'This is an AI Tool node. Connect it to an AI Agent node to use it.',
-          tool: TOOL_NAME,
-        } as IDataObject,
-        pairedItem: { item: 0 },
-      }]];
+      return [
+        [
+          {
+            json: {
+              message: 'This is an AI Tool node. Connect it to an AI Agent node to use it.',
+              tool: TOOL_NAME,
+            } as IDataObject,
+            pairedItem: { item: 0 },
+          },
+        ],
+      ];
     }
 
     if (firstItemTool !== TOOL_NAME) {
-      return [[{
-        json: { error: `Unknown tool: ${firstItemTool}` } as IDataObject,
-        pairedItem: { item: 0 },
-      }]];
+      return [
+        [
+          {
+            json: { error: `Unknown tool: ${firstItemTool}` } as IDataObject,
+            pairedItem: { item: 0 },
+          },
+        ],
+      ];
     }
 
     const maxResults = this.getNodeParameter('maxResults', 0, 10) as number;
@@ -161,7 +172,11 @@ export class SearxngAiTools implements INodeType {
       const rawParams = items[i].json as Record<string, unknown>;
       try {
         // Safe cast: IExecuteFunctions has all methods ISupplyDataFunctions requires.
-        const resultStr = await executeSearchTool(this as unknown as ISupplyDataFunctions, rawParams, maxResults);
+        const resultStr = await executeSearchTool(
+          this as unknown as ISupplyDataFunctions,
+          rawParams,
+          maxResults,
+        );
         returnData.push({
           json: JSON.parse(resultStr) as IDataObject,
           pairedItem: { item: i },
