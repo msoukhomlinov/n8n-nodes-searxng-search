@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, ISupplyDataFunctions } from 'n8n-workflow';
-import { searxngRequest } from '../lib/transport';
+import { searxngRequest, type SearxngSearchResponse } from '../lib/transport';
 import { normalizeCommaSeparatedValues, normalizeSingleValue } from '../lib/helpers';
 import { formatToolError } from './error-formatter';
 
@@ -76,11 +76,11 @@ export async function executeSearchTool(
       queryParameters,
       'json',
     );
+    const jsonResponse = response as SearxngSearchResponse;
+    const rawResults = jsonResponse.results ?? [];
 
-    const allResults: Array<{ title: string; url: string; content: string }> = Array.isArray(
-      response.results,
-    )
-      ? response.results.map((r: Record<string, unknown>) => ({
+    const allResults: Array<{ title: string; url: string; content: string }> = Array.isArray(rawResults)
+      ? rawResults.map((r: Record<string, unknown>) => ({
           title: String(r.title ?? ''),
           url: String(r.url ?? ''),
           content: String(r.content ?? r.snippet ?? ''),

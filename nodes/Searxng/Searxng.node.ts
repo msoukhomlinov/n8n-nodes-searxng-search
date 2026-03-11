@@ -11,7 +11,12 @@ import {
 import { CREDENTIAL_NAME } from './constants';
 import { searchOperations, searchFields } from './description/search.operation';
 import { normalizeCommaSeparatedValues, normalizeSingleValue } from './lib/helpers';
-import { searxngRequest, searxngConfigRequest } from './lib/transport';
+import {
+  searxngRequest,
+  searxngConfigRequest,
+  type SearxngSearchResponse,
+  type SearxngSearchResult,
+} from './lib/transport';
 
 export class Searxng implements INodeType {
   description: INodeTypeDescription = {
@@ -73,7 +78,7 @@ export class Searxng implements INodeType {
 
       async getEngines(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const config = await searxngConfigRequest(this);
-        const engines: Array<{ name: string; categories: string[] }> = config.engines ?? [];
+        const engines: Array<{ name: string; categories?: string[] }> = config.engines ?? [];
         return engines
           .map((e) => ({
             name: e.name,
@@ -188,8 +193,10 @@ export class Searxng implements INodeType {
           const response = await searxngRequest(this, queryParameters, format);
 
           if (format === 'json') {
-            const formattedResults = Array.isArray(response.results)
-              ? response.results.map((result: any) => ({
+            const jsonResponse = response as SearxngSearchResponse;
+            const results = jsonResponse.results ?? [];
+            const formattedResults = Array.isArray(results)
+              ? results.map((result: SearxngSearchResult) => ({
                   title: result.title,
                   url: result.url,
                   content: result.content,
@@ -213,11 +220,11 @@ export class Searxng implements INodeType {
                   results: formattedResults,
                   metadata: {
                     format,
-                    total: response.number_of_results,
-                    time: response.search_time,
-                    engine: response.engine,
+                    total: jsonResponse.number_of_results,
+                    time: jsonResponse.search_time,
+                    engine: jsonResponse.engine,
                   },
-                  raw: response,
+                  raw: jsonResponse,
                 },
               });
             }
