@@ -13,20 +13,25 @@
     "ai-agent"
   ],
   "license": "MIT",
-  "homepage": "",
+  "homepage": "https://github.com/msoukhomlinov/n8n-nodes-searxng-search#readme",
+  "bugs": {
+    "url": "https://github.com/msoukhomlinov/n8n-nodes-searxng-search/issues"
+  },
   "author": {
-    "name": "Max Soukohomlinov"
+    "name": "Max Soukhomlinov",
+    "email": "maxs@intellectit.com.au"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/msoukhomlinov/n8n-nodes-searxng-search.git"
   },
   "engines": {
-    "node": ">=18.10",
+    "node": ">=20.15",
     "pnpm": ">=9.1"
   },
   "packageManager": "pnpm@9.1.4",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "build": "tsc && gulp build:icons",
@@ -38,7 +43,9 @@
     "prepublishOnly": "pnpm build && eslint nodes/**/*.ts credentials/**/*.ts package.json -c .eslintrc.prepublish.js"
   },
   "files": [
-    "dist"
+    "dist/**",
+    "README.md",
+    "LICENSE"
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
