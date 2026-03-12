@@ -1,10 +1,6 @@
 // nodes/Searxng/ai-tools/runtime.ts
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare function require(id: string): any;
-declare namespace require {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function resolve(id: string, options?: any): string;
-}
+declare const require: { (id: string): any; resolve(id: string, options?: any): string };
 
 import type { DynamicStructuredTool } from '@langchain/core/tools';
 import type { z as ZodNamespace } from 'zod';

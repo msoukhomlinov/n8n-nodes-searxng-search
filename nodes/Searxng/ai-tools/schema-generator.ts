@@ -35,6 +35,7 @@ function toRuntimeZodSchema(schema: any, runtimeZ: RuntimeZod): any {
     // ── Zod v4 type names ─────────────────────────────────────────────────
     case 'string':
     // ── Zod v3 type names (fallback) ──────────────────────────────────────
+    // falls through
     case 'ZodString': {
       let s = runtimeZ.string();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
