@@ -11,10 +11,11 @@ const N8N_METADATA_FIELDS = new Set([
   'sessionId',
   'action',
   'chatInput',
-  'root',
+  'root',        // n8n canvas root node UUID — collides with some API 'root' params
   'tool',
   'toolName',
   'toolCallId',
+  'operation',   // unified tool routing field — must not leak into API request bodies
 ]);
 
 export async function executeSearchTool(
