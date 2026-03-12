@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 0.6.0 (2026-03-13)
+
+### Fixed
+
+- **MCP Trigger queue mode compatibility** — `SearxngAiTools` now works correctly in both AI Agent and MCP Trigger (including queue mode) execution paths.
+- **`instanceof` checks across module boundaries** — Added `runtime.ts` that resolves `DynamicStructuredTool` and `zod` from n8n's own module tree via `createRequire` (anchored to `@langchain/classic/agents`), so `instanceof` checks pass when n8n's bundled copies differ from this package's copies.
+- **MCP Trigger schema validation** — Compile-time Zod schemas are now converted to runtime Zod instances at module load using `getRuntimeSchemaBuilders`. This ensures `schema.parseAsync()` in MCP Trigger's queue worker uses n8n's Zod instance, not this package's bundled copy. The converter handles both Zod v3 and v4 internal structures.
+- **`operation` field leaking into API requests** — Added `'operation'` to `N8N_METADATA_FIELDS` in `tool-executor.ts` so n8n's unified tool routing field is stripped before parameters reach the SearXNG API.
+- **`SearxngToolkit` wrapper removed** — `supplyData()` now returns a bare `DynamicStructuredTool` directly (`{ response: tool }`). The toolkit wrapper was causing silent drops in MCP Trigger queue mode and is no longer required by n8n's AI Agent.
+- **`runtime.ts` load failure hardening** — Module-level resolution failures now produce clear error messages at execution time rather than a cryptic crash at node registration. A `console.warn` fires when the `@langchain/classic` anchor is absent.
+
+### Changed
+
+- `DynamicStructuredTool` is no longer a value import in `SearxngAiTools.node.ts` — only `import type` is used; the live class comes from `runtime.ts`.
+
 ## 0.5.0 (2026-03-11)
 
 ### Changed
