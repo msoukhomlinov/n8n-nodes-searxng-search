@@ -1,6 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare function require(id: string): any;
-
+// nodes/Searxng/SearxngAiTools.node.ts
 import { NodeOperationError } from 'n8n-workflow';
 import type {
   NodeConnectionType,
@@ -12,53 +10,16 @@ import type {
   ISupplyDataFunctions,
   SupplyData,
 } from 'n8n-workflow';
-import { DynamicStructuredTool } from '@langchain/core/tools';
 import { CREDENTIAL_NAME } from './constants';
-import { searchToolSchema } from './ai-tools/schema-generator';
+import { getRuntimeSchemaBuilders } from './ai-tools/schema-generator';
 import { TOOL_NAME, TOOL_DESCRIPTION } from './ai-tools/description-builders';
 import { executeSearchTool } from './ai-tools/tool-executor';
+import { RuntimeDynamicStructuredTool, runtimeZod } from './ai-tools/runtime';
 
-// ---------------------------------------------------------------------------
-// Toolkit compatibility — n8n 2.9+ vs older n8n
-//
-// n8n >= 2.9  exports StructuredToolkit from n8n-core.
-// Older n8n   uses Toolkit from @langchain/classic/agents.
-//
-// The AI Agent checks `toolOrToolkit instanceof <ToolkitBase>` to flatten tools.
-// We MUST extend the EXACT same constructor n8n loaded, so instanceof passes.
-// Probe n8n-core first; fall back to classic if StructuredToolkit is absent.
-// ---------------------------------------------------------------------------
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let LangChainToolkitBase: new (...args: any[]) => {
-  tools?: DynamicStructuredTool[];
-  getTools?(): DynamicStructuredTool[];
-};
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-  const nCore = require('n8n-core') as Record<string, unknown>;
-  const StructuredToolkit = nCore['StructuredToolkit'];
-  if (typeof StructuredToolkit !== 'function') throw new Error('not found');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  LangChainToolkitBase = StructuredToolkit as any;
-} catch {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-  ({ Toolkit: LangChainToolkitBase } = require('@langchain/classic/agents') as {
-    Toolkit: typeof LangChainToolkitBase;
-  });
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-class SearxngToolkit extends (LangChainToolkitBase as any) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  declare tools: any[];
-  constructor(toolList: DynamicStructuredTool[]) {
-    super();
-    this.tools = toolList;
-  }
-  getTools(): DynamicStructuredTool[] {
-    return this.tools as DynamicStructuredTool[];
-  }
-}
+// Resolve runtime schemas once at module load.
+// getRuntimeSchemaBuilders converts compile-time Zod schemas to runtime-Zod
+// instances so schema instanceof ZodType passes in n8n's MCP Trigger (queue mode).
+const runtimeSchemas = getRuntimeSchemaBuilders(runtimeZod);
 
 export class SearxngAiTools implements INodeType {
   description: INodeTypeDescription = {
@@ -106,34 +67,33 @@ export class SearxngAiTools implements INodeType {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const supplyDataContext = this;
 
-    const tool = new DynamicStructuredTool({
+    // RuntimeDynamicStructuredTool resolves DynamicStructuredTool from n8n's module
+    // tree so instanceof checks pass in both execution paths:
+    //   - AI Agent: supplyData() → tool definition extracted → execute() called
+    //   - MCP Trigger (including queue mode): supplyData() → tool.invoke(args) → func() called
+    const tool = new RuntimeDynamicStructuredTool({
       name: TOOL_NAME,
       description: TOOL_DESCRIPTION,
-      // Pass raw Zod — never pre-convert. n8n/LangChain handles Zod→JSON schema
-      // conversion internally for tool definition extraction.
+      // Runtime-converted Zod schema — ensures schema.parseAsync() in MCP Trigger's
+      // queue worker uses n8n's Zod instance, not this package's bundled copy.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      schema: searchToolSchema as any,
-      // func() is NOT called by n8n's AI Agent execution path.
-      // n8n uses this only for schema/description extraction.
-      // Real dispatch goes through execute() below.
+      schema: runtimeSchemas.getSearchSchema() as any,
+      // func() is called by MCP Trigger (direct and queue mode).
+      // AI Agent dispatches via execute() below instead.
       func: async (params: Record<string, unknown>) => {
         return executeSearchTool(supplyDataContext, params, maxResults);
       },
     });
 
-    const toolkit = new SearxngToolkit([tool]);
-    return { response: toolkit };
+    // Return bare tool — no Toolkit wrapper needed.
+    // AI Agent and MCP Trigger both consume a single DynamicStructuredTool directly.
+    return { response: tool };
   }
 
   /**
-   * execute() is called by n8n for BOTH "Test step" clicks AND real AI Agent tool invocations.
-   *
-   * CRITICAL: n8n's AI Agent routes tool calls through execute(), NOT DynamicStructuredTool.func().
-   * supplyData() + getTools() only provide tool definitions (names, schemas, descriptions) to the LLM.
-   * When the LLM calls a tool, n8n dispatches via execute() with LLM-provided params merged into
-   * the input item JSON alongside n8n metadata fields (tool, toolCallId, sessionId, etc).
-   *
-   * Detect real calls by checking for the 'tool' field. Absent = "Test step", return stub.
+   * execute() is called by n8n's AI Agent for real tool invocations and "Test step" clicks.
+   * MCP Trigger does NOT use this path — it calls func() on the tool directly.
+   * Detect real AI Agent calls by checking for the 'tool' field injected by n8n's framework.
    */
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     const items = this.getInputData();

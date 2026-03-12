@@ -1,8 +1,26 @@
-jest.mock('n8n-core', () => ({ StructuredToolkit: class StructuredToolkit {} }), {
-  virtual: true,
-});
-jest.mock('@langchain/classic/agents', () => ({ Toolkit: class Toolkit {} }), {
-  virtual: true,
+// nodes/Searxng/SearxngAiTools.node.test.ts
+
+// Mock runtime.ts — replaces the n8n module-tree resolution with simple stubs.
+// Tests only need the node class to instantiate; instanceof checks are not exercised here.
+jest.mock('./ai-tools/runtime', () => {
+  const z = require('zod') as typeof import('zod');
+  return {
+    RuntimeDynamicStructuredTool: class RuntimeDynamicStructuredTool {
+      name: string;
+      description: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      schema: any;
+      func: unknown;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      constructor(fields: any) {
+        this.name = fields.name as string;
+        this.description = fields.description as string;
+        this.schema = fields.schema;
+        this.func = fields.func;
+      }
+    },
+    runtimeZod: z,
+  };
 });
 
 import { SearxngAiTools } from './SearxngAiTools.node';
