@@ -85,7 +85,9 @@ function toRuntimeZodSchema(schema: any, runtimeZ: RuntimeZod): any {
     }
     case 'boolean':  case 'ZodBoolean': converted = runtimeZ.boolean(); break;
     case 'unknown':  case 'ZodUnknown': converted = runtimeZ.unknown(); break;
-    // Zod v4: element at _def.element  |  Zod v3: element at _def.type
+    // Zod v4: element at _def.element  |  Zod v3: element at _def.type (a schema, not the string 'array')
+    // NOTE: in a Zod v4 context, def.type is the string 'array' — do NOT use it as the element fallback.
+    //       def.element is always populated in Zod v4, so the fallback only fires for Zod v3 schemas.
     case 'array':    case 'ZodArray':
       converted = runtimeZ.array(toRuntimeZodSchema(def.element ?? def.type, runtimeZ)); break;
     // Zod v4: values at schema.options (array) or _def.entries (object)  |  Zod v3: _def.values
@@ -126,7 +128,10 @@ function toRuntimeZodSchema(schema: any, runtimeZ: RuntimeZod): any {
       converted = toRuntimeZodSchema(def.innerType, runtimeZ).default(
         typeof def.defaultValue === 'function' ? def.defaultValue() : def.defaultValue,
       ); break;
-    // Zod v4: value at _def.values[0] (array)  |  Zod v3: value at _def.value
+    // Zod v4: value(s) at _def.values (array)  |  Zod v3: value at _def.value
+    // NOTE: Zod v4 supports multi-value literals: z.literal('a', 'b', 'c') → _def.values = ['a','b','c'].
+    //       This converter takes only the first value. Multi-value literals are not used in searchToolSchema,
+    //       but if reused elsewhere, the caller should use z.union() of z.literal() for multi-value cases.
     case 'literal':  case 'ZodLiteral':
       converted = runtimeZ.literal(Array.isArray(def.values) ? def.values[0] : def.value); break;
     case 'union':    case 'ZodUnion':
