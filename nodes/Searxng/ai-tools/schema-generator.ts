@@ -1,7 +1,13 @@
 import { z } from 'zod';
 import { PARAM_DESCRIPTIONS } from './description-builders';
 
+/** All operations exposed by the unified SearXNG tool. */
+export const SEARXNG_OPERATIONS = ['search'] as const;
+export type SearxngOperation = (typeof SEARXNG_OPERATIONS)[number];
+
 export const searchToolSchema = z.object({
+  operation: z.enum(SEARXNG_OPERATIONS as unknown as [string, ...string[]])
+    .describe('The operation to perform. Currently only "search" is supported.'),
   query: z.string().min(1).describe(PARAM_DESCRIPTIONS.query),
   categories: z.string().optional().describe(PARAM_DESCRIPTIONS.categories),
   language: z.string().optional().describe(PARAM_DESCRIPTIONS.language),

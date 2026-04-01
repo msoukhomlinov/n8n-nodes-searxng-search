@@ -1,15 +1,18 @@
+// Tool name complies with MCP regex ^[a-zA-Z0-9_-]{1,128}$
 export const TOOL_NAME = 'searxng_search';
 
 export const TOOL_DESCRIPTION =
-  'Search the web using a private SearXNG metasearch engine. ' +
-  'Returns JSON with title, url, and content for each result. ' +
-  'Use specific, descriptive queries for best results — avoid vague terms. ' +
+  'Search the web using a private SearXNG metasearch engine.\n\n' +
+  'Operations:\n' +
+  '- search: Web search. Set operation="search" and provide a query.\n\n' +
+  'Usage: Always set the "operation" field. ' +
+  'Use specific, descriptive queries — avoid vague terms. ' +
   'Supported categories (comma-separated): general, images, videos, news, map, music, it, science, social_media, files. ' +
   'Optionally filter by language (BCP-47 code, e.g. "en", "de"), time range ("day", "month", "year"), ' +
   'safe search level ("0"=off, "1"=moderate, "2"=strict), page number, or specific engines (comma-separated engine names). ' +
   'Always parse the JSON response — never format results as prose. ' +
-  'If results are empty, try broadening the query or removing category/engine filters. ' +
-  'Response format: { schemaVersion: "1", success: boolean, resource: "search", operation: "search", result?: { items, count, totalAvailable, query }, errorType?: string, message?: string, nextAction?: string }.';
+  'If results are empty, try broadening the query or removing category/engine filters.\n\n' +
+  'Response envelope: { schemaVersion: "1", success, resource, operation, result?: { items, count, totalAvailable, query }, errorType?, message?, nextAction? }.';
 
 export const PARAM_DESCRIPTIONS = {
   query:

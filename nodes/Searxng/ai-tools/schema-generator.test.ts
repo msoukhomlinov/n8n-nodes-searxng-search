@@ -9,22 +9,33 @@ describe('getRuntimeSchemaBuilders', () => {
   const schema = builders.getSearchSchema();
 
   it('accepts a valid query-only input', () => {
-    const result = schema.safeParse({ query: 'typescript n8n' });
+    const result = schema.safeParse({ operation: 'search', query: 'typescript n8n' });
     expect(result.success).toBe(true);
   });
 
   it('rejects empty query (min:1 preserved)', () => {
-    const result = schema.safeParse({ query: '' });
+    const result = schema.safeParse({ operation: 'search', query: '' });
     expect(result.success).toBe(false);
   });
 
   it('rejects missing query', () => {
-    const result = schema.safeParse({});
+    const result = schema.safeParse({ operation: 'search' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing operation', () => {
+    const result = schema.safeParse({ query: 'test' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid operation', () => {
+    const result = schema.safeParse({ operation: 'delete', query: 'test' });
     expect(result.success).toBe(false);
   });
 
   it('accepts all optional fields with valid values', () => {
     const result = schema.safeParse({
+      operation: 'search',
       query: 'test',
       categories: 'general,news',
       language: 'en',
@@ -37,22 +48,22 @@ describe('getRuntimeSchemaBuilders', () => {
   });
 
   it('rejects invalid time_range enum value', () => {
-    const result = schema.safeParse({ query: 'test', time_range: 'week' });
+    const result = schema.safeParse({ operation: 'search', query: 'test', time_range: 'week' });
     expect(result.success).toBe(false);
   });
 
   it('rejects invalid safesearch enum value', () => {
-    const result = schema.safeParse({ query: 'test', safesearch: '3' });
+    const result = schema.safeParse({ operation: 'search', query: 'test', safesearch: '3' });
     expect(result.success).toBe(false);
   });
 
   it('rejects non-integer pageno', () => {
-    const result = schema.safeParse({ query: 'test', pageno: 1.5 });
+    const result = schema.safeParse({ operation: 'search', query: 'test', pageno: 1.5 });
     expect(result.success).toBe(false);
   });
 
   it('rejects pageno less than 1', () => {
-    const result = schema.safeParse({ query: 'test', pageno: 0 });
+    const result = schema.safeParse({ operation: 'search', query: 'test', pageno: 0 });
     expect(result.success).toBe(false);
   });
 });

@@ -6,6 +6,7 @@ export const ERROR_TYPES = {
   RATE_LIMIT: 'rate_limit',
   NOT_FOUND: 'not_found',
   MISSING_QUERY: 'missing_query',
+  INVALID_OPERATION: 'invalid_operation',
 } as const;
 
 export type ErrorType = (typeof ERROR_TYPES)[keyof typeof ERROR_TYPES];

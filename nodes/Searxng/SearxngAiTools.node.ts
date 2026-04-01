@@ -11,7 +11,8 @@ import type {
   SupplyData,
 } from 'n8n-workflow';
 import { CREDENTIAL_NAME } from './constants';
-import { getRuntimeSchemaBuilders } from './ai-tools/schema-generator';
+import { getRuntimeSchemaBuilders, SEARXNG_OPERATIONS } from './ai-tools/schema-generator';
+import type { SearxngOperation } from './ai-tools/schema-generator';
 import { TOOL_NAME, TOOL_DESCRIPTION } from './ai-tools/description-builders';
 import { executeSearchTool } from './ai-tools/tool-executor';
 import { wrapError, ERROR_TYPES } from './ai-tools/error-formatter';
@@ -70,11 +71,9 @@ export class SearxngAiTools implements INodeType {
 
     // RuntimeDynamicStructuredTool resolves DynamicStructuredTool from n8n's module
     // tree so instanceof checks pass in both execution paths:
-    //   - AI Agent: supplyData() → tool definition extracted → execute() called
+    //   - AI Agent (pre-2.14): supplyData() → func() called
+    //   - AI Agent (2.14+): supplyData() → extract definition → execute() called
     //   - MCP Trigger (including queue mode): supplyData() → tool.invoke(args) → func() called
-    //
-    // MCP annotations (future): when n8n supports MCP tool annotations, add:
-    //   annotations: { title: 'SearXNG Web Search', readOnlyHint: true, openWorldHint: true }
     const tool = new RuntimeDynamicStructuredTool({
       name: TOOL_NAME,
       description: TOOL_DESCRIPTION,
@@ -82,9 +81,28 @@ export class SearxngAiTools implements INodeType {
       // queue worker uses n8n's Zod instance, not this package's bundled copy.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       schema: runtimeSchemas.getSearchSchema() as any,
-      // func() is called by MCP Trigger (direct and queue mode).
-      // AI Agent dispatches via execute() below instead.
+      // MCP tool annotations — search is read-only and idempotent
+      annotations: {
+        title: 'SearXNG Web Search',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+      // func() is called by MCP Trigger (direct and queue mode)
+      // and AI Agent (pre-2.14). AI Agent 2.14+ dispatches via execute().
       func: async (params: Record<string, unknown>) => {
+        const operation = params.operation as SearxngOperation | undefined;
+
+        // Validate operation
+        if (!operation || !SEARXNG_OPERATIONS.includes(operation)) {
+          return JSON.stringify(wrapError(
+            'search', String(operation ?? 'unknown'), ERROR_TYPES.INVALID_OPERATION,
+            `Unknown operation: ${String(operation)}. Valid: ${SEARXNG_OPERATIONS.join(', ')}`,
+            `Call this tool with operation set to one of: ${SEARXNG_OPERATIONS.join(', ')}.`,
+          ));
+        }
+
         return executeSearchTool(supplyDataContext, params, maxResults);
       },
     });
@@ -97,20 +115,26 @@ export class SearxngAiTools implements INodeType {
   /**
    * execute() is called by n8n's AI Agent for real tool invocations and "Test step" clicks.
    * MCP Trigger does NOT use this path — it calls func() on the tool directly.
-   * Detect real AI Agent calls by checking for the 'tool' field injected by n8n's framework.
+   *
+   * n8n 2.14+: tool params arrive in item.json with 'operation' but WITHOUT 'tool'.
+   * Older n8n: item.json contains 'tool' field.
+   * Test step: neither 'operation' nor 'tool' is present.
    */
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     const items = this.getInputData();
-    const firstItemTool = items[0]?.json?.['tool'] as string | undefined;
+    const firstItem = items[0]?.json ?? {};
+    const requestedOp = firstItem['operation'] as string | undefined;
+    const toolField = firstItem['tool'] as string | undefined;
 
-    // No tool field → "Test step" click, not a real AI Agent tool call
-    if (!firstItemTool) {
+    // No operation AND no tool field → "Test step" click in editor
+    if (!requestedOp && !toolField) {
       return [
         [
           {
             json: {
               message: 'This is an AI Tool node. Connect it to an AI Agent node to use it.',
               tool: TOOL_NAME,
+              operations: [...SEARXNG_OPERATIONS],
             } as IDataObject,
             pairedItem: { item: 0 },
           },
@@ -118,13 +142,14 @@ export class SearxngAiTools implements INodeType {
       ];
     }
 
-    if (firstItemTool !== TOOL_NAME) {
+    // If tool field is present (older n8n) and doesn't match, reject
+    if (toolField && toolField !== TOOL_NAME) {
       return [
         [
           {
             json: wrapError(
               'search', 'search', ERROR_TYPES.SEARCH_ERROR,
-              `Unknown tool: ${firstItemTool}`,
+              `Unknown tool: ${toolField}`,
               `Use the tool name "${TOOL_NAME}" for search requests.`,
             ) as unknown as IDataObject,
             pairedItem: { item: 0 },
@@ -138,6 +163,22 @@ export class SearxngAiTools implements INodeType {
 
     for (let i = 0; i < items.length; i++) {
       const rawParams = items[i].json as Record<string, unknown>;
+      const itemOp = rawParams['operation'] as string | undefined;
+
+      // Validate operation if present (n8n 2.14+ always sends it)
+      if (itemOp && !SEARXNG_OPERATIONS.includes(itemOp as SearxngOperation)) {
+        const errorEnvelope = wrapError(
+          'search', String(itemOp), ERROR_TYPES.INVALID_OPERATION,
+          `Unknown operation: ${itemOp}. Valid: ${SEARXNG_OPERATIONS.join(', ')}`,
+          `Call this tool with operation set to one of: ${SEARXNG_OPERATIONS.join(', ')}.`,
+        );
+        returnData.push({
+          json: errorEnvelope as unknown as IDataObject,
+          pairedItem: { item: i },
+        });
+        continue;
+      }
+
       try {
         // Safe cast: IExecuteFunctions has all methods ISupplyDataFunctions requires.
         const resultStr = await executeSearchTool(

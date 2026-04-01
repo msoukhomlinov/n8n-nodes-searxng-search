@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 0.7.2 (2026-04-02)
+
+### Changed
+
+- **Unified operation enum** — Schema now includes a required `operation` field (`z.enum(['search'])`) following the MCP list-operations pattern. Establishes the convention for future multi-operation expansion.
+- **n8n 2.14.x execute() compatibility** — `execute()` now detects tool calls via `item.json.operation` (n8n 2.14+) OR `item.json.tool` (older n8n). Previously only checked `tool`, causing 2.14+ tool calls to be misclassified as "Test step" clicks.
+- **Operation validation** — Both `func()` and `execute()` validate the `operation` field against `SEARXNG_OPERATIONS` and return `INVALID_OPERATION` error envelope for unknown operations.
+- **MCP tool annotations** — Added `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint` annotations to the tool definition.
+- **Tool description** — Updated to list operations explicitly and document the `operation` field requirement.
+
 ## 0.7.1 (2026-04-01)
 
 ### Fixed
