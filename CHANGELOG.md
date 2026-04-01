@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 0.7.1 (2026-04-01)
+
+### Fixed
+
+- **`runtime.ts` Proxy target** — Changed `RuntimeDynamicStructuredTool` Proxy target from `{}` to `function () {}`. Per ECMAScript spec §10.5.13, a Proxy only has `[[Construct]]` if its target does — plain objects lack it, causing `TypeError: RuntimeDynamicStructuredTool is not a constructor` before the `construct` trap fires. Reproduced on n8n 2.14.2.
+
+## 0.7.0 (2026-04-01)
+
+### Changed
+
+- **Structured response envelope format** — All tool responses (success and error) now use a versioned envelope: `{ schemaVersion: "1", success, resource, operation, result?, errorType?, message?, nextAction?, context? }`. Replaces the previous ad-hoc `{ success, query, results, total_available }` success format and `{ success, error, error_type, suggestion }` error format.
+- **`error-formatter.ts` rewritten** — Introduced `SuccessEnvelope` / `ErrorEnvelope` interfaces, `wrapSuccess()` / `wrapError()` factory functions, typed `ERROR_TYPES` constant, and `MISSING_QUERY` error type. `formatToolError()` now delegates to `wrapError()` internally.
+- **`tool-executor.ts` uses envelope factories** — Success path returns `wrapSuccess()` with `{ items, count, totalAvailable, query }` payload. Missing-query error uses `wrapError()` with `MISSING_QUERY` type instead of generic `formatToolError()`.
+- **Tool description includes response schema** — `TOOL_DESCRIPTION` now documents the envelope format so LLMs can parse responses without guessing.
+- **Unknown-tool error in `execute()` path** — `SearxngAiTools.node.ts` now returns a structured `wrapError()` envelope instead of a bare `{ error }` object when the AI Agent dispatches an unrecognized tool name.
+
+### Improved
+
+- **`runtime.ts` multi-anchor resolution** — `getRuntimeRequire()` now iterates over multiple anchor candidates (`@langchain/classic/agents`, `langchain/agents`) instead of trying a single anchor with a silent fallback to local `require`. When all anchors fail, returns `null` with a diagnostic string that is included in Proxy error messages for debugging. No more silent fallback to local `require`.
+- **Proxy error diagnostics** — `RuntimeDynamicStructuredTool` and `runtimeZod` Proxy error messages now include per-candidate failure details when the runtime anchor is missing.
+
+### Added
+
+- **`error-formatter.test.ts`** — Unit tests for `ERROR_TYPES`, `wrapSuccess()`, `wrapError()`, and `formatToolError()` covering all error classifications, context handling, and non-Error inputs.
+
+### Refactored
+
+- Streamlined `require` declaration in `runtime.ts` to a single `declare const` statement.
+- Added `// falls through` comment in `schema-generator.ts` for the v4→v3 case fallthrough.
+
 ## 0.6.0 (2026-03-13)
 
 ### Fixed

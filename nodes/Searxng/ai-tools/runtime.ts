@@ -74,7 +74,7 @@ if (runtimeReq) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const RuntimeDynamicStructuredTool: DynamicStructuredToolCtor = new Proxy(
-  {} as DynamicStructuredToolCtor,
+  function () {} as unknown as DynamicStructuredToolCtor,
   {
     construct(_target, args) {
       if (!_RuntimeDynamicStructuredTool) {
