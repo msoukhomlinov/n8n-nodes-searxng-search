@@ -18,6 +18,12 @@ const N8N_METADATA_FIELDS = new Set([
   'operation',   // unified tool routing field — must not leak into API request bodies
 ]);
 
+/**
+ * n8n Agent Tool Node v3 injects $fromAI()-generated keys with these prefixes
+ * into item.json on the execute() path. Strip them alongside the exact-match fields.
+ */
+const N8N_METADATA_PREFIXES = ['Prompt__'];
+
 export async function executeSearchTool(
   context: ISupplyDataFunctions,
   rawInput: Record<string, unknown>,
@@ -26,7 +32,9 @@ export async function executeSearchTool(
   // Strip n8n framework metadata injected into every DynamicStructuredTool call
   const input: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(rawInput)) {
-    if (!N8N_METADATA_FIELDS.has(key)) input[key] = value;
+    if (N8N_METADATA_FIELDS.has(key)) continue;
+    if (N8N_METADATA_PREFIXES.some((p) => key.startsWith(p))) continue;
+    input[key] = value;
   }
 
   const query = input.query as string | undefined;
